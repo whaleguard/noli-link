@@ -24,7 +24,7 @@ async function play(ctx){
   const t=ctx.tool;
   ctx.el.innerHTML = `<div class="stage"><div class="hud"><div><small>${E(t.hudL||'점수')}</small><b id="hl">0</b></div><div><small>${E(t.hudR||'시간')}</small><b id="hr">-</b></div></div><div class="play" id="pa"></div></div>`;
   const pa=NL.$('#pa');
-  const api = { el:pa, L:v=>NL.$('#hl')&&(NL.$('#hl').textContent=v), R:v=>NL.$('#hr')&&(NL.$('#hr').textContent=v), alive:true };
+  const api = { el:pa, room:ctx.room, d:ctx.room.d||{}, L:v=>NL.$('#hl')&&(NL.$('#hl').textContent=v), R:v=>NL.$('#hr')&&(NL.$('#hr').textContent=v), alive:true };
   NL._stop = () => { api.alive=false; api.cleanup && api.cleanup(); };
   if(t.prep) t.prep(api);
   if(!t.noCount) await NL.countdown();
@@ -75,16 +75,18 @@ NL.arcade({ id:'mole', name:'두더지 잡기', desc:'30초 동안 두더지 터
 });
 
 /* ---------- 7초를 맞춰라 ---------- */
-NL.arcade({ id:'seven', name:'7초를 맞춰라', desc:'눈 감고 7.000초에 멈추기', bg:'#F3E7CC', icon:'seven', better:'low', unit:'오차', noCount:true,
-  howto:'시작을 누르고 마음속으로 7초를 센 뒤 멈춤! 3초 후엔 시계가 가려져요.', hudL:'목표', hudR:'기회', fmt:(v,e)=>`오차 ${(v/1000).toFixed(3)}초`,
+NL.arcade({ id:'seven', name:'7초를 맞춰라', desc:'눈 감고 7초에 멈추기 (7.777초 모드)', bg:'#F3E7CC', icon:'seven', better:'low', unit:'오차', noCount:true,
+  howto:'시작을 누르고 마음속으로 목표 시간을 센 뒤 멈춤! 3초 후엔 시계가 가려져요.', hudL:'목표', hudR:'기회', fmt:(v,e)=>`오차 ${(v/1000).toFixed(3)}초`,
+  fields:[{k:'target', type:'select', label:'목표 시간', def:'7000', opts:[['7000','7.000초'],['7777','7.777초 (키오스크 룰)'],['10000','10.000초'],['3000','3.000초']]}],
+  build(v){ return {target:+v.target||7000}; },
   promo:{t:'원조는 키오스크 "7초를 잡아라"', d:'행사장 인기 1위 게임. 목표 7.777초 맞히면 경품 지급 이벤트'},
-  game(api){ api.L('7.000초'); api.R('1번');
+  game(api){ const TG=(api.d&&api.d.target)||7000; api.L((TG/1000).toFixed(3)+'초'); api.R('1번');
     api.el.innerHTML=`<div class="seven"><div class="clock num" id="ck">0.000</div><button class="btn" id="bt" style="min-height:96px;font-size:24px">시작</button></div>`;
     return new Promise(ok=>{ let t0=0, raf=0, run=false; const ck=NL.$('#ck',api.el), bt=NL.$('#bt',api.el);
       const f=()=>{ if(!run||!api.alive) return; const el=(now()-t0)/1000; if(el<3){ ck.textContent=el.toFixed(3); } else { ck.textContent='?.???'; ck.classList.add('hide'); } raf=requestAnimationFrame(f); };
       api.cleanup=()=>cancelAnimationFrame(raf);
       bt.onpointerdown=e=>{ e.preventDefault(); if(!run){ run=true; t0=now(); bt.textContent='멈춤'; bt.classList.add('gold'); NL.beep(660,.08); f(); }
-        else { run=false; const el=now()-t0; ck.classList.remove('hide'); ck.textContent=(el/1000).toFixed(3); bt.disabled=true; NL.beep(990,.15); setTimeout(()=>ok({v:Math.round(Math.abs(el-7000)), x:Math.round(el), note:`${(el/1000).toFixed(3)}초에 멈췄어요`}), 900); } }; }); }
+        else { run=false; const el=now()-t0; ck.classList.remove('hide'); ck.textContent=(el/1000).toFixed(3); bt.disabled=true; NL.beep(990,.15); setTimeout(()=>ok({v:Math.round(Math.abs(el-TG)), x:Math.round(el), note:`${(el/1000).toFixed(3)}초에 멈췄어요`}), 900); } }; }); }
 });
 
 /* ---------- 반응속도 ---------- */

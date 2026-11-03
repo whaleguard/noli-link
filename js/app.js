@@ -3,15 +3,8 @@
 'use strict';
 const app = document.getElementById('app');
 const E = NL.esc;
-const CATS = [['all','전체'],['decide','정하기'],['vote','투표'],['arcade','게임'],['fun','운세']];
-const SOON = [
-  ['decide','복불복 카드 뒤집기'],['vote','이상형 월드컵'],['vote','익명 질문함'],['vote','순위 매기기 투표'],['vote','변명왕 선발대회'],['vote','전원일치 작전'],
-  ['arcade','블록 쌓기'],['arcade','벽돌깨기'],['arcade','다른 그림 찾기'],['arcade','컵 속 공 찾기'],['arcade','병뚜껑 컬링'],['arcade','무궁화꽃이 피었습니다'],
-  ['arcade','박수 리듬왕'],['arcade','선 따라가기'],['arcade','젓가락 콩 옮기기'],['arcade','삼겹살 뒤집기 장인'],['arcade','칼퇴길 탈출런'],['arcade','마트 계산대 알바왕'],
-  ['arcade','초성 맞히기 배틀'],['arcade','나를 얼마나 알아?'],['arcade','우리 방 OX 퀴즈'],['arcade','넌센스 퀴즈'],['arcade','사자성어 이어 맞히기'],['arcade','끝말잇기 생존전'],
-  ['arcade','사투리 통역사'],['arcade','추억의 소리 감별사'],['decide','라이어 게임'],['decide','마피아'],['decide','비밀 미션 뽑기'],['decide','눈치게임'],['vote','우리 방 빙고'],
-  ['decide','그림 전달 릴레이'],['vote','최저 유일 숫자'],['decide','금지어 인터뷰'],['fun','단체 롤링페이퍼'],['fun','타로 한 장'],['fun','우리 방 궁합'],['fun','재미 테스트 링크판']
-];
+const CATS = [['all','전체'],['decide','정하기'],['vote','투표'],['arcade','게임'],['quiz','퀴즈'],['party','파티'],['fun','운세·축하']];
+const SOON = [];
 const BACK = '<svg viewBox="0 0 20 20"><path d="M12.5 4l-6 6 6 6" stroke="#172742" stroke-width="2.2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>';
 let timer = null;
 
@@ -32,7 +25,6 @@ function home(){
       <div class="facts"><span>가입 없음</span><span>링크 가진 사람만</span><span>24시간 뒤 자동 종료</span><span>무료</span></div></section>
     <nav class="cats" id="cats" aria-label="분류">${CATS.map(([k,n])=>`<button type="button" data-c="${k}" aria-pressed="${k===cat}">${n}</button>`).join('')}</nav>
     <p class="sec-t" id="cnt"></p><div class="grid" id="grid"></div>
-    <p class="sec-t">곧 나와요</p><div class="grid soon-g" id="soon"></div>
     ${NL.promoHTML({promo:{t:'우리 행사엔 대형화면 게임 키오스크',d:'7초를 잡아라, 경품 룰렛, AI 포토부스까지. 행사 대여·매장 설치 상담'}})}
     ${foot()}</main>`;
   const draw = c => {
@@ -42,8 +34,6 @@ function home(){
     NL.$('#cnt').textContent = `지금 쓸 수 있는 ${ids.length}종`;
     NL.$('#grid').innerHTML = ids.map(id=>{ const t=NL.tools[id];
       return `<a class="tcard" href="#new/${t.id}"><span class="ic" style="background:${t.bg||'#F3E7CC'}">${NL.icon(t.icon||t.id)}</span><b>${E(t.name)}</b><span>${E(t.desc)}</span></a>`; }).join('');
-    const s = SOON.filter(x=>c==='all'||x[0]===c);
-    NL.$('#soon').innerHTML = s.map(x=>`<div class="tcard soon"><b>${E(x[1])}</b></div>`).join('');
   };
   NL.$$('#cats button').forEach(b=>b.onclick=()=>draw(b.dataset.c));
   draw(CATS.some(c=>c[0]===cat)?cat:'all');

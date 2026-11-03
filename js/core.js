@@ -67,7 +67,7 @@ NL.mergeBoard = (tool, lists) => {
   let arr = Object.values(by);
   if(tool.better) arr.sort((x,y)=> tool.better==='high'? y.v-x.v : x.v-y.v);
   else arr.sort((x,y)=>(x.at||0)-(y.at||0));
-  return arr.slice(0, 60);
+  return arr.slice(0, tool.maxB||60);
 };
 NL.withEntry = (tool, room, entry) => Object.assign({}, room, {b: NL.mergeBoard(tool, [room.b||[], [entry]])});
 
@@ -145,6 +145,32 @@ NL.mergeUI = (el, tool, room, onMerged) => {
   };
 };
 
+/* ---------- 이어달리기 참여 공통 ---------- */
+NL.submit = async (ctx, entry, msgFn, title, opts) => {
+  opts = opts || {};
+  let name = opts.name;
+  if(!name && !opts.anon){ name = await NL.askName(opts.ask || '이름을 알려주세요'); if(!name) return null; }
+  entry.n = entry.n || name; entry.at = Date.now();
+  const nr = NL.withEntry(ctx.tool, ctx.room, entry);
+  ctx.room = nr; ctx.redraw && ctx.redraw(name);
+  const box = NL.$(opts.box || '#after'); if(!box) return nr; box.innerHTML='';
+  await ctx.shareRoom(box, nr, msgFn(nr, name), title || '참여 완료! 새 링크를 방에 다시 올려주세요');
+  box.scrollIntoView({behavior:'smooth', block:'center'});
+  return nr;
+};
+NL.CHAIN_NOTE = '이 링크에 담긴 결과예요. 참여한 뒤 받은 새 링크를 방에 다시 올려주세요. 링크가 갈라지면 아래 "기록 합치기"로 합칠 수 있어요.';
+NL.pickN = (arr, n, r) => NL.shuffle(arr, r||Math.random).slice(0, n);
+NL.reveal = (title, bodyHTML, btn) => new Promise(res => { const ov=document.createElement('div'); ov.className='ov';
+  ov.innerHTML=`<div class="ov-c">${title?`<p class="lead">${title}</p>`:''}${bodyHTML}<button class="btn">${NL.esc(btn||'확인하고 가리기')}</button></div>`;
+  document.body.appendChild(ov); NL.$('button',ov).onclick=()=>{ov.remove();res();}; });
+/* 이름 고르기 → 본인 확인 → 비밀 보기 (라이어·마피아·미션 등) */
+NL.secretPick = (ctx, names, getHTML, note) => {
+  ctx.el.insertAdjacentHTML('beforeend', `<div class="stage"><p class="lead">${NL.esc(note||'내 이름을 눌러 확인하세요. 화면은 나만 보세요.')}</p><div class="slip" id="sp">${names.map((nm,i)=>`<button type="button" data-i="${i}"><span>${NL.esc(nm)}</span><small>나예요</small></button>`).join('')}</div></div>`);
+  NL.$$('#sp button').forEach(b=>b.onclick=async()=>{ const i=+b.dataset.i;
+    if(!await NL.confirm(`${names[i]}님 맞나요?`,'본인 것만 확인해 주세요.','네, 저예요')) return;
+    NL.beep(880,.15); await NL.reveal(`${NL.esc(names[i])}님`, getHTML(i)); b.classList.add('open'); });
+};
+
 /* ---------- icons (도구별 단순 도형) ---------- */
 NL.icon = (k) => {
   const p = {
@@ -170,7 +196,9 @@ NL.icon = (k) => {
     stroop:'<text x="16" y="22" text-anchor="middle" font-size="16" font-weight="800" fill="#3B7DD8" font-family="sans-serif">빨강</text>',
     math:'<path d="M8 6v10M3 11h10M19 11h10M5 23l6 6M11 23l-6 6M19 24h10M19 28h10" stroke="#172742" stroke-width="2.4" stroke-linecap="round"/>',
     fortune:'<circle cx="16" cy="16" r="12" fill="#172742"/><path d="M19 7a9 9 0 1 0 6 13 7 7 0 1 1-6-13z" fill="#F3D79A"/><circle cx="10" cy="11" r="1.2" fill="#F3D79A"/>'
-  }[k] || '<circle cx="16" cy="16" r="10" fill="#B68A36"/>';
+  }[k];
+  if(!p){ const g=NL.tools[k]&&NL.tools[k].glyph||'?'; const fs=g.length>2?10:g.length>1?13:18;
+    return `<svg viewBox="0 0 32 32" aria-hidden="true"><rect x="3" y="3" width="26" height="26" rx="8" fill="#172742"/><text x="16" y="${16+fs*.36}" text-anchor="middle" font-size="${fs}" font-weight="800" fill="#F3D79A" font-family="Pretendard,sans-serif">${NL.esc(g)}</text></svg>`; }
   return `<svg viewBox="0 0 32 32" aria-hidden="true">${p}</svg>`;
 };
 
